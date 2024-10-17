@@ -1,0 +1,23 @@
+[package]
+name = "ori-vst"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[workspace]
+members = ["macro"]
+
+[dependencies]
+uuid = "1.7"
+vst3-sys = { git = "https://github.com/RustAudio/vst3-sys.git", rev = "f3e8f01" }
+vst3-com = { git = "https://github.com/RustAudio/vst3-sys.git", rev = "f3e8f01" }
+
+[dependencies.ori]
+git = "https://github.com/ori-ui/ori.git"
+default-features = false
+features = ["shell", "x11"]
+
+[[example]]
+name = "gain"
+crate-type = ["cdylib"]
