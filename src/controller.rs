@@ -27,7 +27,7 @@ impl<P: VstPlugin> IEditController for RawPlugin<P> {
         params.count() as i32
     }
 
-    unsafe fn get_parameter_info(&self, param_index: i32, info: *mut ParameterInfo) -> tresult {
+    unsafe fn get_parameter_info(&self, index: i32, info: *mut ParameterInfo) -> tresult {
         kResultOk
     }
 
@@ -58,6 +58,10 @@ impl<P: VstPlugin> IEditController for RawPlugin<P> {
     }
 
     unsafe fn get_param_normalized(&self, id: u32) -> f64 {
+        //let mut plugin = self.state.plugin.lock().unwrap();
+        //let mut params = plugin.params();
+        //let param = params.param(id as usize).unwrap();
+        //param.normalized() as f64
         0.0
     }
 

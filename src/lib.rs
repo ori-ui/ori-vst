@@ -23,10 +23,15 @@ use view::*;
 pub fn panic_handler(info: &std::panic::PanicInfo) {
     let backtrace = std::backtrace::Backtrace::capture();
 
+    let contents = std::fs::read_to_string("/home/anon/ori_panic.log").unwrap_or_default();
+
     _ = std::fs::write(
         "/home/anon/ori_panic.log",
-        format!("{}\n\n{}", info, backtrace),
+        format!("{}\n\n{}\n\n{}", contents, info, backtrace),
     );
+
+    eprintln!("{}", info);
+
     std::process::exit(1);
 }
 

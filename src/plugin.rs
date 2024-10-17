@@ -1,4 +1,4 @@
-use std::{ffi::c_void, sync::Arc};
+use std::{ffi::c_void, ptr::NonNull, sync::Arc};
 
 use ori::core::{view::View, window::Window};
 use uuid::Uuid;
@@ -27,7 +27,9 @@ pub trait VstPlugin: Sized + Send + 'static {
 
     fn new() -> Self;
 
-    fn params(&mut self) -> impl Params<Self> {}
+    fn params(&mut self) -> &mut dyn Params {
+        unsafe { &mut *NonNull::<()>::dangling().as_ptr() }
+    }
 
     fn window() -> Window {
         Window::new()
