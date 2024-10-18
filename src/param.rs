@@ -94,59 +94,67 @@ impl Params for () {
     }
 }
 
-impl<P: Params> Params for Vec<P> {
-    fn count(&self) -> usize {
-        self.iter().map(Params::count).sum()
-    }
-
-    fn info(&self, index: usize) -> Option<ParamInfo> {
-        let mut count = 0;
-
-        for params in self {
-            let params_count = params.count();
-
-            if index < count + params_count {
-                return params.info(index - count);
+macro_rules! impl_iterator {
+    (impl[$($tt:tt)*] $ty:ty) => {
+        impl<$($tt)*> Params for $ty {
+            fn count(&self) -> usize {
+                self.iter().map(Params::count).sum()
             }
 
-            count += params_count;
-        }
+            fn info(&self, index: usize) -> Option<ParamInfo> {
+                let mut count = 0;
 
-        None
-    }
+                for params in self {
+                    let params_count = params.count();
 
-    fn param(&mut self, index: usize) -> Option<&mut dyn Param> {
-        let mut count = 0;
+                    if index < count + params_count {
+                        return params.info(index - count);
+                    }
 
-        for params in self {
-            let params_count = params.count();
+                    count += params_count;
+                }
 
-            if index < count + params_count {
-                return params.param(index - count);
+                None
             }
 
-            count += params_count;
-        }
+            fn param(&mut self, index: usize) -> Option<&mut dyn Param> {
+                let mut count = 0;
 
-        None
-    }
+                for params in self {
+                    let params_count = params.count();
 
-    fn identifier(&self, index: usize) -> Option<String> {
-        let mut count = 0;
+                    if index < count + params_count {
+                        return params.param(index - count);
+                    }
 
-        for params in self {
-            let params_count = params.count();
+                    count += params_count;
+                }
 
-            if index < count + params_count {
-                return params.identifier(index - count);
+                None
             }
 
-            count += params_count;
-        }
+            fn identifier(&self, index: usize) -> Option<String> {
+                let mut count = 0;
 
-        None
-    }
+                for params in self {
+                    let params_count = params.count();
+
+                    if index < count + params_count {
+                        return params.identifier(index - count);
+                    }
+
+                    count += params_count;
+                }
+
+                None
+            }
+        }
+    };
 }
+
+impl_iterator!(impl[P: Params] Vec<P>);
+impl_iterator!(impl[P: Params] [P]);
+impl_iterator!(impl[P: Params, const COUNT: usize] [P; COUNT]);
 
 /// Information about a parameter.
 #[derive(Clone, Debug)]
