@@ -66,7 +66,7 @@ pub trait VstPlugin: Sized + Send + 'static {
 #[derive(Clone, Debug)]
 pub struct Info {
     /// The unique identifier of the plugin.
-    pub cid: Uuid,
+    pub uuid: Uuid,
 
     /// The name of the plugin.
     ///

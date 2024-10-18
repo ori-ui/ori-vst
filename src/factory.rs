@@ -55,7 +55,7 @@ impl<P: VstPlugin> IPluginFactory for Factory<P> {
         let plugin_info = P::info();
         util::strcpy(&plugin_info.name, &mut info.name);
         util::strcpy("Audio Module Class", &mut info.category);
-        info.cid.data = plugin_info.cid.to_bytes_le();
+        info.cid.data = plugin_info.uuid.to_bytes_le();
         info.cardinality = ClassCardinality::kManyInstances as i32;
 
         kResultOk
@@ -73,7 +73,7 @@ impl<P: VstPlugin> IPluginFactory for Factory<P> {
 
         let plugin_info = P::info();
 
-        if (*cid).data != plugin_info.cid.to_bytes_le() {
+        if (*cid).data != plugin_info.uuid.to_bytes_le() {
             return kInvalidArgument;
         }
 
@@ -94,7 +94,7 @@ impl<P: VstPlugin> IPluginFactory2 for Factory<P> {
         let plugin_info = P::info();
         util::strcpy(&plugin_info.name, &mut info.name);
         util::strcpy("Audio Module Class", &mut info.category);
-        info.cid.data = plugin_info.cid.to_bytes_le();
+        info.cid.data = plugin_info.uuid.to_bytes_le();
         info.cardinality = ClassCardinality::kManyInstances as i32;
 
         kResultOk

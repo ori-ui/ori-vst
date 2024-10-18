@@ -9,7 +9,7 @@ pub struct GainPlugin {
 impl VstPlugin for GainPlugin {
     fn info() -> Info {
         Info {
-            cid: uuid!("4c38d5eb-aa45-4ce4-95ed-af8993b2557d"),
+            uuid: uuid!("4c38d5eb-aa45-4ce4-95ed-af8993b2557d"),
             name: String::from("Gain (Ori vst3)"),
             vendor: String::from("ChangeCaps Inc."),
             version: String::from("0.1.0"),
