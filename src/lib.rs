@@ -110,8 +110,8 @@ pub mod prelude {
     //! A prelude for convenience.
 
     pub use crate::{
-        uuid, vst3, AudioLayout, AudioPort, Buffer, BufferLayout, Float, Param, ParamFlags, Params,
-        PluginInfo, ProcessConfig, Status, Unit, VstPlugin,
+        uuid, vst3, Activate, AudioLayout, AudioPort, Buffer, BufferLayout, Float, Info, Param,
+        ParamFlags, Params, Process, Unit, VstPlugin,
     };
 
     pub use ori::prelude::*;

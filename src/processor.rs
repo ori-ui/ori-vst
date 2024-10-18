@@ -9,7 +9,7 @@ use vst3_sys::{
     },
 };
 
-use crate::{Buffer, BufferLayout, ProcessMode, RawPlugin, Status, VstPlugin};
+use crate::{Buffer, BufferLayout, ProcessMode, RawPlugin, Process, VstPlugin};
 
 const K_INPUT: i32 = BusDirections::kInput as i32;
 const K_OUTPUT: i32 = BusDirections::kOutput as i32;
@@ -128,7 +128,7 @@ impl<P: VstPlugin> IAudioProcessor for RawPlugin<P> {
     unsafe fn set_processing(&self, state: TBool) -> tresult {
         let processing = state != 0;
 
-        self.state.set_status(Status::Done);
+        self.state.set_status(Process::Done);
         self.state.set_processing(processing);
 
         if processing {
@@ -224,9 +224,9 @@ impl<P: VstPlugin> IAudioProcessor for RawPlugin<P> {
 
     unsafe fn get_tail_samples(&self) -> u32 {
         match self.state.status() {
-            Status::Done => 0,
-            Status::Tail(n) => n,
-            Status::KeepAlive => u32::MAX,
+            Process::Done => 0,
+            Process::Tail(n) => n,
+            Process::KeepAlive => u32::MAX,
         }
     }
 }

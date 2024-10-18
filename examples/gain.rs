@@ -7,8 +7,8 @@ pub struct GainPlugin {
 }
 
 impl VstPlugin for GainPlugin {
-    fn info() -> PluginInfo {
-        PluginInfo {
+    fn info() -> Info {
+        Info {
             cid: uuid!("4c38d5eb-aa45-4ce4-95ed-af8993b2557d"),
             name: String::from("Gain (Ori vst3)"),
             vendor: String::from("ChangeCaps Inc."),
@@ -54,14 +54,14 @@ impl VstPlugin for GainPlugin {
         buffer: &mut Buffer<'_>,
         _aux_buffers: &mut [Buffer<'_>],
         _layout: BufferLayout,
-    ) -> Status {
+    ) -> Process {
         for samples in buffer.iter_samples() {
             for sample in samples {
                 *sample *= *self.gain;
             }
         }
 
-        Status::Done
+        Process::Done
     }
 }
 

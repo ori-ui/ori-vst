@@ -14,9 +14,57 @@ use vst3_sys::{
 
 use crate::{AudioLayout, Buffer, BufferLayout, Params, PluginState};
 
+/// A VST3 plugin.
+pub trait VstPlugin: Sized + Send + 'static {
+    /// Get the plugin information.
+    fn info() -> Info;
+
+    /// Get the audio layout of the plugin, given a set of input and output channel counts.
+    fn layout(inputs: &[u32], outputs: &[u32]) -> Option<AudioLayout>;
+
+    /// Create a new instance of the plugin.
+    fn new() -> Self;
+
+    /// Get the parameters of the plugin.
+    fn params(&mut self) -> &mut dyn Params {
+        unsafe { &mut *NonNull::<()>::dangling().as_ptr() }
+    }
+
+    /// Create a new window.
+    fn window() -> Window {
+        Window::new()
+    }
+
+    /// Build the user interface of the plugin.
+    fn ui(&mut self) -> impl View<Self> + 'static;
+
+    /// Activate the plugin is activated.
+    ///
+    /// This allows the plugin to allocate any resources it needs.
+    fn activate(&mut self, audio_layout: &AudioLayout, buffer_layout: &BufferLayout) -> Activate {
+        let _ = (audio_layout, buffer_layout);
+
+        Activate::new()
+    }
+
+    /// Deactivate the plugin.
+    fn deactivate(&mut self) {}
+
+    /// Reset the processing state of the plugin.
+    fn reset(&mut self) {}
+
+    /// Process the audio buffers.
+    fn process(
+        &mut self,
+        buffer: &mut Buffer<'_>,
+        aux_buffers: &mut [Buffer<'_>],
+        layout: BufferLayout,
+    ) -> Process;
+}
+
 /// The plugin information.
 #[derive(Clone, Debug)]
-pub struct PluginInfo {
+pub struct Info {
     /// The unique identifier of the plugin.
     pub cid: Uuid,
 
@@ -46,72 +94,20 @@ pub struct PluginInfo {
     pub email: String,
 }
 
-/// A VST3 plugin.
-pub trait VstPlugin: Sized + Send + 'static {
-    /// Get the plugin information.
-    fn info() -> PluginInfo;
-
-    /// Get the audio layout of the plugin, given a set of input and output channel counts.
-    fn layout(inputs: &[u32], outputs: &[u32]) -> Option<AudioLayout>;
-
-    /// Create a new instance of the plugin.
-    fn new() -> Self;
-
-    /// Get the parameters of the plugin.
-    fn params(&mut self) -> &mut dyn Params {
-        unsafe { &mut *NonNull::<()>::dangling().as_ptr() }
-    }
-
-    /// Create a new window.
-    fn window() -> Window {
-        Window::new()
-    }
-
-    /// Build the user interface of the plugin.
-    fn ui(&mut self) -> impl View<Self> + 'static;
-
-    /// Activate the plugin is activated.
-    ///
-    /// This allows the plugin to allocate any resources it needs.
-    fn activate(
-        &mut self,
-        audio_layout: &AudioLayout,
-        buffer_layout: &BufferLayout,
-    ) -> ProcessConfig {
-        let _ = (audio_layout, buffer_layout);
-
-        ProcessConfig::new()
-    }
-
-    /// Deactivate the plugin.
-    fn deactivate(&mut self) {}
-
-    /// Reset the processing state of the plugin.
-    fn reset(&mut self) {}
-
-    /// Process the audio buffers.
-    fn process(
-        &mut self,
-        buffer: &mut Buffer<'_>,
-        aux_buffers: &mut [Buffer<'_>],
-        layout: BufferLayout,
-    ) -> Status;
-}
-
 /// The processing configuration.
 #[derive(Clone, Debug)]
-pub struct ProcessConfig {
+pub struct Activate {
     /// The number of latancy samples.
     pub latency: u32,
 }
 
-impl Default for ProcessConfig {
+impl Default for Activate {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl ProcessConfig {
+impl Activate {
     /// Create a new processing configuration.
     pub fn new() -> Self {
         Self { latency: 0 }
@@ -126,7 +122,7 @@ impl ProcessConfig {
 
 /// The processing status after processing a buffer.
 #[derive(Clone, Copy, Debug)]
-pub enum Status {
+pub enum Process {
     /// The processing is done.
     Done,
 

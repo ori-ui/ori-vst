@@ -5,14 +5,14 @@ use std::sync::{
 
 use parking_lot::Mutex;
 
-use crate::{editor::EditorHandle, AudioLayout, BufferLayout, Buffers, Status, VstPlugin};
+use crate::{editor::EditorHandle, AudioLayout, BufferLayout, Buffers, Process, VstPlugin};
 
 pub(crate) struct PluginState<P: VstPlugin> {
     pub plugin: Mutex<P>,
     pub audio_layout: Mutex<Arc<AudioLayout>>,
     pub buffer_layout: Mutex<Option<BufferLayout>>,
     pub buffers: Mutex<Buffers>,
-    pub status: Mutex<Status>,
+    pub status: Mutex<Process>,
     pub editor: Mutex<Option<Arc<dyn EditorHandle>>>,
     pub latency: AtomicU32,
     pub processing: AtomicBool,
@@ -33,7 +33,7 @@ impl<P: VstPlugin> PluginState<P> {
             audio_layout: Mutex::new(Arc::new(AudioLayout::default())),
             buffer_layout: Mutex::new(None),
             buffers: Mutex::new(Buffers::new()),
-            status: Mutex::new(Status::Done),
+            status: Mutex::new(Process::Done),
             editor: Mutex::new(None),
             latency: AtomicU32::new(0),
             processing: AtomicBool::new(false),
@@ -56,11 +56,11 @@ impl<P: VstPlugin> PluginState<P> {
         *self.buffer_layout.lock() = layout;
     }
 
-    pub fn status(&self) -> Status {
+    pub fn status(&self) -> Process {
         *self.status.lock()
     }
 
-    pub fn set_status(&self, status: Status) {
+    pub fn set_status(&self, status: Process) {
         *self.status.lock() = status;
     }
 
