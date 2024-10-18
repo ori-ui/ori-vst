@@ -5,6 +5,8 @@ use crate::{Param, ParamFlags, Unit};
 /// A floating-point parameter.
 #[derive(Clone, Debug)]
 pub struct Float {
+    name: Option<String>,
+    short: Option<String>,
     value: f32,
     default: f32,
     range: RangeInclusive<f32>,
@@ -17,6 +19,8 @@ impl Float {
     /// Create a new floating-point parameter.
     pub fn new(default: f32, range: RangeInclusive<f32>) -> Self {
         Self {
+            name: None,
+            short: None,
             value: default,
             default,
             range,
@@ -24,6 +28,18 @@ impl Float {
             unit: Unit::Linear,
             flags: ParamFlags::empty(),
         }
+    }
+
+    /// Set the name of the parameter.
+    pub fn with_name(mut self, name: impl ToString) -> Self {
+        self.name = Some(name.to_string());
+        self
+    }
+
+    /// Set the short name of the parameter.
+    pub fn with_short(mut self, short: impl ToString) -> Self {
+        self.short = Some(short.to_string());
+        self
     }
 
     /// Set the number of steps for the parameter.

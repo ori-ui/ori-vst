@@ -235,8 +235,21 @@ fn info(fields: &[syn::Field]) -> TokenStream {
                     }
                 })
             } else {
-                let name = attrs.name.clone().unwrap_or_else(|| ident.to_string());
-                let short = attrs.short.clone().unwrap_or_else(|| ident.to_string());
+                let name = match &attrs.name {
+                    Some(name) => quote! { #name },
+                    None => quote! {
+                        #ori_vst::Param::name(&self.#ident)
+                            .unwrap_or(::std::stringify!(#ident))
+                    },
+                };
+
+                let short = match &attrs.short {
+                    Some(short) => quote! { #short },
+                    None => quote! {
+                        #ori_vst::Param::short(&self.#ident)
+                            .unwrap_or(#name)
+                    },
+                };
 
                 let unit = match &attrs.unit {
                     Some(unit) => quote! { #unit },

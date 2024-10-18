@@ -9,7 +9,7 @@ use vst3_sys::{
     },
 };
 
-use crate::{Buffer, BufferLayout, ProcessMode, RawPlugin, Process, VstPlugin};
+use crate::{Buffer, BufferLayout, Process, ProcessMode, RawPlugin, VstPlugin};
 
 const K_INPUT: i32 = BusDirections::kInput as i32;
 const K_OUTPUT: i32 = BusDirections::kOutput as i32;
@@ -54,12 +54,12 @@ impl<P: VstPlugin> IAudioProcessor for RawPlugin<P> {
             outputs.push(*outputs_ptr.add(i as usize) as u32);
         }
 
-        if let Some(layout) = P::layout(&inputs, &outputs) {
-            self.state.set_audio_layout(layout);
-
-            kResultOk
-        } else {
-            kResultFalse
+        match P::layout(&inputs, &outputs) {
+            None => kResultFalse,
+            Some(layout) => {
+                self.state.set_audio_layout(layout);
+                kResultOk
+            }
         }
     }
 

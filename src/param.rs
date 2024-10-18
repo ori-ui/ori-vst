@@ -22,6 +22,16 @@ pub trait Param {
         self.normalize(self.default())
     }
 
+    /// Get the name of the parameter.
+    fn name(&self) -> Option<&str> {
+        None
+    }
+
+    /// Get the short name of the parameter.
+    fn short(&self) -> Option<&str> {
+        None
+    }
+
     /// Get the unit of the parameter.
     fn unit(&self) -> Unit {
         Unit::Unknown
