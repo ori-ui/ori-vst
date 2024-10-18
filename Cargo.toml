@@ -8,12 +8,16 @@ edition = "2021"
 [workspace]
 members = ["macro"]
 
+[features]
+image = ["ori/image"]
+serde = ["ori/serde"]
+
 [dependencies]
 ori-vst-macro = { path = "macro", version = "0.1.0" }
 
 bitflags = "2.0"
 parking_lot = "0.12"
-uuid = "1.7"
+uuid = "1"
 vst3-com = { git = "https://github.com/RustAudio/vst3-sys.git", rev = "f3e8f01" }
 vst3-sys = { git = "https://github.com/RustAudio/vst3-sys.git", rev = "f3e8f01" }
 

@@ -1,5 +1,4 @@
-use ori::prelude::*;
-use ori_vst::*;
+use ori_vst::prelude::*;
 
 #[derive(Params)]
 pub struct GainPlugin {
@@ -10,7 +9,7 @@ pub struct GainPlugin {
 impl VstPlugin for GainPlugin {
     fn info() -> PluginInfo {
         PluginInfo {
-            cid: Uuid::parse_str("4c38d5eb-aa45-4ce4-95ed-af8993b2557d").unwrap(),
+            cid: uuid!("4c38d5eb-aa45-4ce4-95ed-af8993b2557d"),
             name: String::from("Gain (Ori vst3)"),
             vendor: String::from("ChangeCaps Inc."),
             version: String::from("0.1.0"),

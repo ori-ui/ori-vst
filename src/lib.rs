@@ -21,6 +21,8 @@ mod view;
 #[cfg(target_os = "linux")]
 mod x11;
 
+pub use ori::*;
+
 pub use audio_layout::*;
 pub use buffer::*;
 pub use factory::*;
@@ -31,6 +33,8 @@ use state::*;
 use view::*;
 
 pub use uuid::Uuid;
+
+pub use ori_vst_macro::uuid;
 
 #[doc(hidden)]
 pub fn panic_handler(info: &std::panic::PanicInfo) {
@@ -100,4 +104,15 @@ macro_rules! vst3 {
             }
         };
     };
+}
+
+pub mod prelude {
+    //! A prelude for convenience.
+
+    pub use crate::{
+        uuid, vst3, AudioLayout, AudioPort, Buffer, BufferLayout, Float, Param, ParamFlags, Params,
+        PluginInfo, ProcessConfig, Status, Unit, VstPlugin,
+    };
+
+    pub use ori::prelude::*;
 }
