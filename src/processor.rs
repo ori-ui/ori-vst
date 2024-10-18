@@ -132,7 +132,7 @@ impl<P: VstPlugin> IAudioProcessor for RawPlugin<P> {
         self.state.set_processing(processing);
 
         if processing {
-            if let Ok(mut plugin) = self.state.plugin.try_lock() {
+            if let Some(mut plugin) = self.state.plugin.try_lock() {
                 plugin.reset();
             }
         }
@@ -155,7 +155,7 @@ impl<P: VstPlugin> IAudioProcessor for RawPlugin<P> {
             return kResultOk;
         }
 
-        let mut buffers = self.state.buffers.lock().unwrap();
+        let mut buffers = self.state.buffers.lock();
         let buffers = buffers.get(samples);
 
         let mut empty = Buffer::empty();
@@ -215,8 +215,9 @@ impl<P: VstPlugin> IAudioProcessor for RawPlugin<P> {
             update_buffer(&mut aux_buffers[i], samples, input, output);
         }
 
-        let mut plugin = self.state.plugin.lock().unwrap();
-        plugin.process(main_buffer, aux_buffers, buffer_layout);
+        let mut plugin = self.state.plugin.lock();
+        let status = plugin.process(main_buffer, aux_buffers, buffer_layout);
+        self.state.set_status(status);
 
         kResultOk
     }

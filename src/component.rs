@@ -11,7 +11,6 @@ use vst3_sys::{
 use crate::{util, RawPlugin, VstPlugin};
 
 const K_AUDIO: i32 = MediaTypes::kAudio as i32;
-const K_EVENT: i32 = MediaTypes::kEvent as i32;
 
 const K_INPUT: i32 = BusDirections::kInput as i32;
 const K_OUTPUT: i32 = BusDirections::kOutput as i32;
@@ -128,7 +127,7 @@ impl<P: VstPlugin> IComponent for RawPlugin<P> {
     }
 
     unsafe fn set_active(&self, state: TBool) -> tresult {
-        let mut plugin = self.state.plugin.lock().unwrap();
+        let mut plugin = self.state.plugin.lock();
 
         if state != 1 {
             plugin.deactivate();
@@ -139,7 +138,8 @@ impl<P: VstPlugin> IComponent for RawPlugin<P> {
             let audio_layout = self.state.audio_layout();
             self.state.allocate_buffers(&audio_layout);
 
-            plugin.activate(&audio_layout, &buffer_layout);
+            let config = plugin.activate(&audio_layout, &buffer_layout);
+            self.state.set_latency(config.latency);
 
             return kResultOk;
         }
@@ -147,11 +147,11 @@ impl<P: VstPlugin> IComponent for RawPlugin<P> {
         kResultFalse
     }
 
-    unsafe fn set_state(&self, state: SharedVstPtr<dyn IBStream>) -> tresult {
+    unsafe fn set_state(&self, _state: SharedVstPtr<dyn IBStream>) -> tresult {
         kResultOk
     }
 
-    unsafe fn get_state(&self, state: SharedVstPtr<dyn IBStream>) -> tresult {
+    unsafe fn get_state(&self, _state: SharedVstPtr<dyn IBStream>) -> tresult {
         kResultOk
     }
 }

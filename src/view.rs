@@ -1,19 +1,24 @@
 use std::{
     ffi::{c_void, CStr},
-    sync::{Arc, Mutex},
+    mem,
+    sync::Arc,
 };
+
+use parking_lot::Mutex;
+use vst3_com::VstPtr;
 use vst3_sys::{
-    base::{char16, kResultFalse, kResultOk, tresult, FIDString, TBool},
-    gui::{IPlugView, ViewRect},
+    base::{char16, kResultFalse, kResultOk, kResultTrue, tresult, FIDString, TBool},
+    gui::{IPlugFrame, IPlugView, ViewRect},
+    utils::SharedVstPtr,
     VST3,
 };
 
-use crate::{editor::EditorHandle, PluginState, VstPlugin};
+use crate::{PluginState, VstPlugin};
 
 #[VST3(implements(IPlugView))]
 pub struct RawView<P: VstPlugin> {
     state: Arc<PluginState<P>>,
-    handle: Mutex<Option<EditorHandle>>,
+    frame: Mutex<Option<VstPtr<dyn IPlugFrame>>>,
 }
 
 impl<P: VstPlugin> RawView<P> {
@@ -40,9 +45,9 @@ impl<P: VstPlugin> IPlugView for RawView<P> {
     }
 
     unsafe fn attached(&self, parent: *mut c_void, type_: FIDString) -> tresult {
-        let mut handle = self.handle.lock().unwrap();
+        let mut editor = self.state.editor.lock();
 
-        if handle.is_some() {
+        if editor.is_some() {
             return kResultFalse;
         }
 
@@ -51,20 +56,20 @@ impl<P: VstPlugin> IPlugView for RawView<P> {
         let new_handle = match c_str.to_str() {
             #[cfg(target_os = "linux")]
             Ok(t) if t == "X11EmbedWindowID" => {
-                EditorHandle::new_x11(self.state.clone(), parent as u32)
+                crate::x11::spawn_editor(self.state.clone(), parent)
             }
             _ => return kResultFalse,
         };
 
-        *handle = Some(new_handle);
+        *editor = Some(new_handle);
 
         kResultOk
     }
 
     unsafe fn removed(&self) -> tresult {
-        let mut handle = self.handle.lock().unwrap();
+        let mut editor = self.state.editor.lock();
 
-        if let Some(handle) = handle.take() {
+        if let Some(handle) = editor.take() {
             handle.quit();
             return kResultOk;
         }
@@ -85,9 +90,9 @@ impl<P: VstPlugin> IPlugView for RawView<P> {
     }
 
     unsafe fn get_size(&self, size: *mut ViewRect) -> tresult {
-        let handle = self.handle.lock().unwrap();
+        let editor = self.state.editor.lock();
 
-        if let Some(handle) = handle.as_ref() {
+        if let Some(handle) = editor.as_ref() {
             let (width, height) = handle.size();
 
             (*size).top = 0;
@@ -100,10 +105,20 @@ impl<P: VstPlugin> IPlugView for RawView<P> {
     }
 
     unsafe fn on_size(&self, new_size: *mut ViewRect) -> tresult {
-        let handle = self.handle.lock().unwrap();
+        let editor = self.state.editor.lock();
 
-        if let Some(handle) = handle.as_ref() {
-            handle.resize((*new_size).right as u32, (*new_size).bottom as u32);
+        if let Some(editor) = editor.as_ref() {
+            let width = (*new_size).right - (*new_size).left;
+            let height = (*new_size).bottom - (*new_size).top;
+
+            let width = width as u32;
+            let height = height as u32;
+
+            if !editor.resizable() && (width, height) != editor.size() {
+                return kResultFalse;
+            }
+
+            editor.resize(width, height);
         }
 
         kResultOk
@@ -113,16 +128,26 @@ impl<P: VstPlugin> IPlugView for RawView<P> {
         kResultOk
     }
 
-    unsafe fn set_frame(&self, _frame: *mut c_void) -> tresult {
+    unsafe fn set_frame(&self, frame: *mut c_void) -> tresult {
+        let frame: SharedVstPtr<dyn IPlugFrame> = mem::transmute(frame);
+        match frame.upgrade() {
+            Some(frame) => {
+                self.frame.lock().replace(frame);
+            }
+            None => {
+                self.frame.lock().take();
+            }
+        }
+
         kResultOk
     }
 
     unsafe fn can_resize(&self) -> tresult {
-        let handle = self.handle.lock().unwrap();
+        let editor = self.state.editor.lock();
 
-        if let Some(handle) = handle.as_ref() {
+        if let Some(handle) = editor.as_ref() {
             if handle.resizable() {
-                return kResultOk;
+                return kResultTrue;
             }
         }
 

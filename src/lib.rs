@@ -1,9 +1,15 @@
+#![warn(missing_docs)]
+
+//! # Ori VST
+//! Ori VST is a framework for building VST3 plugins in Rust with graphical user interfaces.
+
 mod audio_layout;
 mod buffer;
 mod component;
 mod controller;
 mod editor;
 mod factory;
+mod float;
 mod param;
 mod plugin;
 mod processor;
@@ -12,14 +18,21 @@ mod unit;
 mod util;
 mod view;
 
+#[cfg(target_os = "linux")]
+mod x11;
+
 pub use audio_layout::*;
 pub use buffer::*;
 pub use factory::*;
+pub use float::*;
 pub use param::*;
 pub use plugin::*;
 use state::*;
 use view::*;
 
+pub use uuid::Uuid;
+
+#[doc(hidden)]
 pub fn panic_handler(info: &std::panic::PanicInfo) {
     let backtrace = std::backtrace::Backtrace::capture();
 
@@ -35,15 +48,14 @@ pub fn panic_handler(info: &std::panic::PanicInfo) {
     std::process::exit(1);
 }
 
+/// Macro for exporting a [`VstPlugin`] and generating the necessary boilerplate.
 #[macro_export]
 macro_rules! vst3 {
     ($plugin:ty) => {
         #[doc(hidden)]
-        mod vst3 {
+        const _: () = {
             #[no_mangle]
             unsafe extern "system" fn GetPluginFactory() -> *mut ::std::ffi::c_void {
-                use super::*;
-
                 ::std::panic::set_hook(::std::boxed::Box::new($crate::panic_handler));
 
                 let factory = $crate::Factory::<$plugin>::new();
@@ -86,6 +98,6 @@ macro_rules! vst3 {
             extern "system" fn bundleExit() -> bool {
                 true
             }
-        }
+        };
     };
 }

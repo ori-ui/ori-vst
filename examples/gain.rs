@@ -1,9 +1,10 @@
 use ori::prelude::*;
 use ori_vst::*;
-use uuid::Uuid;
 
+#[derive(Params)]
 pub struct GainPlugin {
-    gain: f32,
+    #[param(name = "Gain", unit = Unit::Decibels)]
+    gain: Float,
 }
 
 impl VstPlugin for GainPlugin {
@@ -27,18 +28,24 @@ impl VstPlugin for GainPlugin {
     }
 
     fn new() -> Self {
-        Self { gain: 1.0 }
+        Self {
+            gain: Float::new(1.0, 0.0..=20.0),
+        }
+    }
+
+    fn params(&mut self) -> &mut dyn Params {
+        self
     }
 
     fn ui(&mut self) -> impl View<Self> + 'static {
-        let slider = slider(self.gain)
+        let slider = slider(*self.gain)
             .range(0.0..=20.0)
             .on_input(|cx, data: &mut Self, value| {
-                data.gain = value;
+                *data.gain = value;
                 cx.rebuild();
             });
 
-        let gain = text(format!("Gain: {}", self.gain));
+        let gain = text(format!("Gain: {}", *self.gain));
 
         center(vstack![slider, gain])
     }
@@ -51,7 +58,7 @@ impl VstPlugin for GainPlugin {
     ) -> Status {
         for samples in buffer.iter_samples() {
             for sample in samples {
-                *sample *= self.gain;
+                *sample *= *self.gain;
             }
         }
 

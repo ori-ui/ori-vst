@@ -9,14 +9,24 @@ edition = "2021"
 members = ["macro"]
 
 [dependencies]
+ori-vst-macro = { path = "macro", version = "0.1.0" }
+
+bitflags = "2.0"
+parking_lot = "0.12"
 uuid = "1.7"
-vst3-sys = { git = "https://github.com/RustAudio/vst3-sys.git", rev = "f3e8f01" }
 vst3-com = { git = "https://github.com/RustAudio/vst3-sys.git", rev = "f3e8f01" }
+vst3-sys = { git = "https://github.com/RustAudio/vst3-sys.git", rev = "f3e8f01" }
 
 [dependencies.ori]
 git = "https://github.com/ori-ui/ori.git"
 default-features = false
-features = ["shell", "x11"]
+
+[dependencies.ori-glow]
+git = "https://github.com/ori-ui/ori.git"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+x11-dl = "2.21.0"
+xkeysym = "0.2"
 
 [[example]]
 name = "gain"

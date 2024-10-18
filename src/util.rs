@@ -19,6 +19,16 @@ pub unsafe fn u16strcpy(src: &str, dst: &mut [i16]) {
         }
 
         // SAFETY: `i16` has no invalid bit patterns.
-        dst[i] = mem::transmute(c);
+        dst[i] = mem::transmute::<u16, i16>(c);
     }
+}
+
+pub unsafe fn u16strlen(src: *const i16) -> usize {
+    let mut len = 0;
+
+    while *src.add(len) != 0 {
+        len += 1;
+    }
+
+    len
 }

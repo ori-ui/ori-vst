@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use std::{ffi::c_void, marker::PhantomData};
 
 use vst3_com::IID;
@@ -11,12 +13,14 @@ use vst3_sys::{
 
 use crate::{util, RawPlugin, VstPlugin};
 
+/// A VST3 plugin factory.
 #[VST3(implements(IPluginFactory, IPluginFactory2))]
 pub struct Factory<P: VstPlugin> {
     marker: PhantomData<fn() -> P>,
 }
 
 impl<P: VstPlugin> Factory<P> {
+    /// Create a new plugin factory.
     pub fn new() -> Box<Self> {
         Self::allocate(PhantomData)
     }

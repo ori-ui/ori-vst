@@ -1,16 +1,19 @@
 use std::sync::{
     atomic::{AtomicBool, AtomicU32, Ordering},
-    Arc, Mutex,
+    Arc,
 };
 
-use crate::{AudioLayout, BufferLayout, Buffers, Status, VstPlugin};
+use parking_lot::Mutex;
 
-pub struct PluginState<P: VstPlugin> {
+use crate::{editor::EditorHandle, AudioLayout, BufferLayout, Buffers, Status, VstPlugin};
+
+pub(crate) struct PluginState<P: VstPlugin> {
     pub plugin: Mutex<P>,
     pub audio_layout: Mutex<Arc<AudioLayout>>,
     pub buffer_layout: Mutex<Option<BufferLayout>>,
     pub buffers: Mutex<Buffers>,
     pub status: Mutex<Status>,
+    pub editor: Mutex<Option<Arc<dyn EditorHandle>>>,
     pub latency: AtomicU32,
     pub processing: AtomicBool,
 }
@@ -31,33 +34,34 @@ impl<P: VstPlugin> PluginState<P> {
             buffer_layout: Mutex::new(None),
             buffers: Mutex::new(Buffers::new()),
             status: Mutex::new(Status::Done),
+            editor: Mutex::new(None),
             latency: AtomicU32::new(0),
             processing: AtomicBool::new(false),
         }
     }
 
     pub fn audio_layout(&self) -> Arc<AudioLayout> {
-        self.audio_layout.lock().unwrap().clone()
+        self.audio_layout.lock().clone()
     }
 
     pub fn set_audio_layout(&self, layout: AudioLayout) {
-        *self.audio_layout.lock().unwrap() = Arc::new(layout);
+        *self.audio_layout.lock() = Arc::new(layout);
     }
 
     pub fn buffer_layout(&self) -> Option<BufferLayout> {
-        self.buffer_layout.lock().unwrap().clone()
+        self.buffer_layout.lock().clone()
     }
 
     pub fn set_buffer_layout(&self, layout: Option<BufferLayout>) {
-        *self.buffer_layout.lock().unwrap() = layout;
+        *self.buffer_layout.lock() = layout;
     }
 
     pub fn status(&self) -> Status {
-        *self.status.lock().unwrap()
+        *self.status.lock()
     }
 
     pub fn set_status(&self, status: Status) {
-        *self.status.lock().unwrap() = status;
+        *self.status.lock() = status;
     }
 
     pub fn latency(&self) -> u32 {
@@ -68,6 +72,7 @@ impl<P: VstPlugin> PluginState<P> {
         self.latency.store(latency, Ordering::SeqCst);
     }
 
+    #[allow(dead_code)]
     pub fn processing(&self) -> bool {
         self.processing.load(Ordering::SeqCst)
     }
@@ -77,7 +82,7 @@ impl<P: VstPlugin> PluginState<P> {
     }
 
     pub fn allocate_buffers(&self, layout: &AudioLayout) {
-        let mut buffers = self.buffers.lock().unwrap();
+        let mut buffers = self.buffers.lock();
         buffers.allocate(layout);
     }
 }
