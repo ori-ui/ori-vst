@@ -94,6 +94,60 @@ impl Params for () {
     }
 }
 
+impl<P: Params> Params for Vec<P> {
+    fn count(&self) -> usize {
+        self.iter().map(Params::count).sum()
+    }
+
+    fn info(&self, index: usize) -> Option<ParamInfo> {
+        let mut count = 0;
+
+        for params in self {
+            let params_count = params.count();
+
+            if index < count + params_count {
+                return params.info(index - count);
+            }
+
+            count += params_count;
+        }
+
+        None
+    }
+
+    fn param(&mut self, index: usize) -> Option<&mut dyn Param> {
+        let mut count = 0;
+
+        for params in self {
+            let params_count = params.count();
+
+            if index < count + params_count {
+                return params.param(index - count);
+            }
+
+            count += params_count;
+        }
+
+        None
+    }
+
+    fn identifier(&self, index: usize) -> Option<String> {
+        let mut count = 0;
+
+        for params in self {
+            let params_count = params.count();
+
+            if index < count + params_count {
+                return params.identifier(index - count);
+            }
+
+            count += params_count;
+        }
+
+        None
+    }
+}
+
 /// Information about a parameter.
 #[derive(Clone, Debug)]
 pub struct ParamInfo {
