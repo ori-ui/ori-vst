@@ -92,13 +92,15 @@ impl<P: VstPlugin> IPlugView for RawView<P> {
     unsafe fn get_size(&self, size: *mut ViewRect) -> tresult {
         let editor = self.state.editor.lock();
 
-        if let Some(handle) = editor.as_ref() {
-            let (width, height) = handle.size();
+        if let Some(editor) = editor.as_ref() {
+            let size = &mut *size;
 
-            (*size).top = 0;
-            (*size).left = 0;
-            (*size).bottom = height as i32;
-            (*size).right = width as i32;
+            let (width, height) = editor.size();
+
+            size.top = 0;
+            size.left = 0;
+            size.bottom = height as i32;
+            size.right = width as i32;
         }
 
         kResultOk
@@ -108,8 +110,10 @@ impl<P: VstPlugin> IPlugView for RawView<P> {
         let editor = self.state.editor.lock();
 
         if let Some(editor) = editor.as_ref() {
-            let width = (*new_size).right - (*new_size).left;
-            let height = (*new_size).bottom - (*new_size).top;
+            let new_size = &*new_size;
+
+            let width = new_size.right - new_size.left;
+            let height = new_size.bottom - new_size.top;
 
             let width = width as u32;
             let height = height as u32;
@@ -154,7 +158,23 @@ impl<P: VstPlugin> IPlugView for RawView<P> {
         kResultFalse
     }
 
-    unsafe fn check_size_constraint(&self, _rect: *mut ViewRect) -> tresult {
-        kResultOk
+    unsafe fn check_size_constraint(&self, rect: *mut ViewRect) -> tresult {
+        let editor = self.state.editor.lock();
+
+        if let Some(editor) = editor.as_ref() {
+            let rect = &*rect;
+
+            let width = rect.right - rect.left;
+            let height = rect.bottom - rect.top;
+
+            let width = width as u32;
+            let height = height as u32;
+
+            if !editor.resizable() && (width, height) != editor.size() {
+                return kResultFalse;
+            }
+        }
+
+        kResultTrue
     }
 }
