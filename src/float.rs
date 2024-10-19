@@ -118,6 +118,14 @@ impl Param for Float {
         (plain - *self.range.start()) / size
     }
 
+    fn name(&self) -> Option<&str> {
+        self.name.as_deref()
+    }
+
+    fn short(&self) -> Option<&str> {
+        self.short.as_deref()
+    }
+
     fn unit(&self) -> Unit {
         self.unit.clone()
     }
