@@ -46,7 +46,7 @@ pub unsafe fn spawn_editor<P: VstPlugin>(
         event_tx,
         width: AtomicU32::new(window.width()),
         height: AtomicU32::new(window.height()),
-        resizable: AtomicBool::new(true),
+        resizable: AtomicBool::new(window.resizable),
     });
 
     spawn_editor_thread(state, parent, event_rx, handle.clone(), window);
