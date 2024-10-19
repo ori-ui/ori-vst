@@ -15,7 +15,7 @@ use ori::{
     core::{command::CommandWaker, window::WindowUpdate},
     prelude::*,
 };
-use ori_glow::GlowRenderer;
+use ori_skia::SkiaRenderer;
 use x11_dl::{
     glx::{self, Glx, GLX_DEPTH_SIZE, GLX_DOUBLEBUFFER, GLX_RGBA},
     xlib::{
@@ -102,7 +102,7 @@ struct X11Window {
     id: WindowId,
     glx: glx::GLXContext,
     window: xlib::Window,
-    renderer: GlowRenderer,
+    renderer: SkiaRenderer,
 }
 
 unsafe fn handle_app_requests<P: VstPlugin>(editor: &mut X11Editor<P>) {
@@ -192,11 +192,10 @@ unsafe fn open_window<P: VstPlugin>(editor: &mut X11Editor<P>, window: Window, u
     let glx = (GLX.glXCreateContext)(editor.display, vi, ptr::null_mut(), 1);
     (GLX.glXMakeCurrent)(editor.display, x11_window, glx);
 
-    let renderer = GlowRenderer::new(|s| {
+    let renderer = SkiaRenderer::new(|s| {
         let cstring = ffi::CString::new(s).unwrap();
         (GLX.glXGetProcAddress)(cstring.as_ptr() as *const _).unwrap() as *const _
-    })
-    .unwrap();
+    });
 
     (GLX.glXMakeCurrent)(editor.display, 0, ptr::null_mut());
 
@@ -236,10 +235,7 @@ unsafe fn render_window<P: VstPlugin>(editor: &mut X11Editor<P>) {
         let width = editor.handle.width.load(Ordering::Relaxed);
         let height = editor.handle.height.load(Ordering::Relaxed);
 
-        window
-            .renderer
-            .render(draw.canvas, draw.clear_color, width, height, 1.0)
-            .unwrap();
+        (window.renderer).render(draw.canvas, draw.clear_color, width, height, 1.0);
     }
 
     (GLX.glXSwapBuffers)(editor.display, window.window);
