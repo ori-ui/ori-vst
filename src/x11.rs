@@ -17,7 +17,10 @@ use ori::{
 };
 use ori_skia::SkiaRenderer;
 use x11_dl::{
-    glx::{self, Glx, GLX_DEPTH_SIZE, GLX_DOUBLEBUFFER, GLX_RGBA},
+    glx::{
+        self, Glx, GLX_ALPHA_SIZE, GLX_BLUE_SIZE, GLX_DOUBLEBUFFER, GLX_GREEN_SIZE, GLX_RED_SIZE,
+        GLX_RGBA, GLX_SAMPLES, GLX_SAMPLE_BUFFERS,
+    },
     xlib::{
         self, AllocNone, ButtonPressMask, ButtonReleaseMask, CWColormap, CWEventMask, Display,
         ExposureMask, InputOutput, KeyPressMask, KeyReleaseMask, LeaveWindowMask,
@@ -139,7 +142,23 @@ unsafe fn open_window<P: VstPlugin>(editor: &mut X11Editor<P>, window: Window, u
         panic!("Only one window is supported");
     }
 
-    let mut attrs = [GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, 0];
+    let mut attrs = [
+        GLX_RGBA,
+        GLX_RED_SIZE,
+        8,
+        GLX_BLUE_SIZE,
+        8,
+        GLX_GREEN_SIZE,
+        8,
+        GLX_ALPHA_SIZE,
+        8,
+        GLX_DOUBLEBUFFER,
+        GLX_SAMPLE_BUFFERS,
+        1,
+        GLX_SAMPLES,
+        4,
+        0,
+    ];
 
     let vi = (GLX.glXChooseVisual)(editor.display, 0, attrs.as_mut_ptr());
 
@@ -193,6 +212,10 @@ unsafe fn open_window<P: VstPlugin>(editor: &mut X11Editor<P>, window: Window, u
     (GLX.glXMakeCurrent)(editor.display, x11_window, glx);
 
     let renderer = SkiaRenderer::new(|s| {
+        if s.starts_with("egl") {
+            return ptr::null();
+        }
+
         let cstring = ffi::CString::new(s).unwrap();
         (GLX.glXGetProcAddress)(cstring.as_ptr() as *const _).unwrap() as *const _
     });

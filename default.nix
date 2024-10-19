@@ -6,6 +6,8 @@ pkgs.stdenv.mkDerivation rec {
   buildInputs = [
     pkgs.libGL
 
+    pkgs.freetype
+    pkgs.fontconfig
     pkgs.libxkbcommon
     pkgs.xorg.libX11
     pkgs.xorg.libXcursor
