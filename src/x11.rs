@@ -1,6 +1,6 @@
 use std::{
     ffi,
-    mem::MaybeUninit,
+    mem::{ManuallyDrop, MaybeUninit},
     ptr,
     sync::{
         atomic::{AtomicBool, AtomicU32, Ordering},
@@ -105,7 +105,7 @@ struct X11Window {
     id: WindowId,
     glx: glx::GLXContext,
     window: xlib::Window,
-    renderer: SkiaRenderer,
+    renderer: ManuallyDrop<SkiaRenderer>,
 }
 
 unsafe fn handle_app_requests<P: VstPlugin>(editor: &mut X11Editor<P>) {
@@ -226,7 +226,7 @@ unsafe fn open_window<P: VstPlugin>(editor: &mut X11Editor<P>, window: Window, u
         id: window.id(),
         glx,
         window: x11_window,
-        renderer,
+        renderer: ManuallyDrop::new(renderer),
     };
 
     let mut plugin = editor.state.plugin.lock();
@@ -323,6 +323,11 @@ unsafe fn spawn_editor_thread<P: VstPlugin>(
 
             while let Ok(event) = event_rx.try_recv() {
                 handle_event(&mut editor, event);
+
+                if !editor.running.load(Ordering::Relaxed) {
+                    return;
+                }
+
                 handle_app_requests(&mut editor);
             }
 
@@ -332,6 +337,11 @@ unsafe fn spawn_editor_thread<P: VstPlugin>(
 
             if let Ok(event) = event_rx.recv() {
                 handle_event(&mut editor, event);
+
+                if !editor.running.load(Ordering::Relaxed) {
+                    return;
+                }
+
                 handle_app_requests(&mut editor);
             }
         }
@@ -557,12 +567,17 @@ unsafe fn spawn_event_thread(
 impl<P: VstPlugin> Drop for X11Editor<P> {
     fn drop(&mut self) {
         unsafe {
-            if let Some(ref window) = self.window {
+            if let Some(ref mut window) = self.window {
+                ptr::drop_in_place(&mut window.renderer);
+
                 (GLX.glXDestroyContext)(self.display, window.glx);
                 (XLIB.XDestroyWindow)(self.display, window.window);
             }
 
-            (XLIB.XCloseDisplay)(self.display);
+            // FIXME: for whatever reason, when the display is closed
+            // the reaper will at some point in the future just close with
+            // exit code 1
+            // (XLIB.XCloseDisplay)(self.display);
         }
     }
 }
