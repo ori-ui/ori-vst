@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     ffi,
     mem::{ManuallyDrop, MaybeUninit},
     ptr,
@@ -21,6 +22,7 @@ use x11_dl::{
         self, Glx, GLX_ALPHA_SIZE, GLX_BLUE_SIZE, GLX_DOUBLEBUFFER, GLX_GREEN_SIZE, GLX_RED_SIZE,
         GLX_RGBA, GLX_SAMPLES, GLX_SAMPLE_BUFFERS,
     },
+    xcursor::Xcursor,
     xlib::{
         self, AllocNone, ButtonPressMask, ButtonReleaseMask, CWColormap, CWEventMask, Display,
         ExposureMask, InputOutput, KeyPressMask, KeyReleaseMask, LeaveWindowMask,
@@ -32,6 +34,7 @@ use xkeysym::Keysym;
 use crate::{editor::EditorHandle, PluginState, VstPlugin};
 
 static XLIB: LazyLock<Xlib> = LazyLock::new(|| Xlib::open().unwrap());
+static XCURSOR: LazyLock<Xcursor> = LazyLock::new(|| Xcursor::open().unwrap());
 static GLX: LazyLock<Glx> = LazyLock::new(|| Glx::open().unwrap());
 
 pub unsafe fn spawn_editor<P: VstPlugin>(
@@ -105,6 +108,7 @@ struct X11Window {
     id: WindowId,
     glx: glx::GLXContext,
     window: xlib::Window,
+    cursors: HashMap<Cursor, xlib::Cursor>,
     renderer: ManuallyDrop<SkiaRenderer>,
 }
 
@@ -130,7 +134,16 @@ unsafe fn handle_app_request<P: VstPlugin>(editor: &mut X11Editor<P>, request: A
             WindowUpdate::Maximized(_) => {}
             WindowUpdate::Visible(_) => {}
             WindowUpdate::Color(_) => {}
-            WindowUpdate::Cursor(_) => {}
+            WindowUpdate::Cursor(cursor) => {
+                if let Some(ref mut window) = editor.window {
+                    let cursor = window.cursors.entry(cursor).or_insert_with(|| {
+                        let cstring = ffi::CString::new(cursor.name()).unwrap();
+                        (XCURSOR.XcursorLibraryLoadCursor)(editor.display, cstring.as_ptr())
+                    });
+
+                    (XLIB.XDefineCursor)(editor.display, window.window, *cursor);
+                }
+            }
             WindowUpdate::Ime(_) => {}
         },
         AppRequest::Quit => editor.running.store(false, Ordering::Relaxed),
@@ -226,6 +239,7 @@ unsafe fn open_window<P: VstPlugin>(editor: &mut X11Editor<P>, window: Window, u
         id: window.id(),
         glx,
         window: x11_window,
+        cursors: HashMap::new(),
         renderer: ManuallyDrop::new(renderer),
     };
 
@@ -572,6 +586,10 @@ impl<P: VstPlugin> Drop for X11Editor<P> {
 
                 (GLX.glXDestroyContext)(self.display, window.glx);
                 (XLIB.XDestroyWindow)(self.display, window.window);
+
+                for (_, cursor) in window.cursors.drain() {
+                    (XLIB.XFreeCursor)(self.display, cursor);
+                }
             }
 
             // FIXME: for whatever reason, when the display is closed
