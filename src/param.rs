@@ -97,10 +97,17 @@ impl Params for () {
 /// A boolean parameter.
 #[derive(Clone, Debug)]
 pub struct Bool {
-    value: bool,
-    default: bool,
-    name: Option<String>,
-    short: Option<String>,
+    /// The value of the parameter.
+    pub value: bool,
+
+    /// The default value of the parameter.
+    pub default: bool,
+
+    /// The name of the parameter.
+    pub name: Option<String>,
+
+    /// The short name of the parameter.
+    pub short: Option<String>,
 }
 
 impl Bool {

@@ -5,14 +5,29 @@ use crate::{Param, ParamFlags, Unit};
 /// A floating-point parameter.
 #[derive(Clone, Debug)]
 pub struct Float {
-    name: Option<String>,
-    short: Option<String>,
-    value: f32,
-    default: f32,
-    range: RangeInclusive<f32>,
-    steps: Option<u32>,
-    unit: Unit,
-    flags: ParamFlags,
+    /// The name of the parameter.
+    pub name: Option<String>,
+
+    /// The short name of the parameter.
+    pub short: Option<String>,
+
+    /// The value of the parameter.
+    pub value: f32,
+
+    /// The default value of the parameter.
+    pub default: f32,
+
+    /// The range of the parameter.
+    pub range: RangeInclusive<f32>,
+
+    /// The number of steps for the parameter.
+    pub steps: Option<u32>,
+
+    /// The unit of the parameter.
+    pub unit: Unit,
+
+    /// The flags of the parameter.
+    pub flags: ParamFlags,
 }
 
 impl Float {
@@ -31,37 +46,37 @@ impl Float {
     }
 
     /// Set the name of the parameter.
-    pub fn with_name(mut self, name: impl ToString) -> Self {
+    pub fn name(mut self, name: impl ToString) -> Self {
         self.name = Some(name.to_string());
         self
     }
 
     /// Set the short name of the parameter.
-    pub fn with_short(mut self, short: impl ToString) -> Self {
+    pub fn short(mut self, short: impl ToString) -> Self {
         self.short = Some(short.to_string());
         self
     }
 
     /// Set the number of steps for the parameter.
-    pub fn with_steps(mut self, steps: u32) -> Self {
+    pub fn steps(mut self, steps: u32) -> Self {
         self.steps = Some(steps);
         self
     }
 
     /// Set the step size for the parameter.
-    pub fn with_step_size(self, step_size: f32) -> Self {
+    pub fn step_size(self, step_size: f32) -> Self {
         let steps = (*self.range.end() - *self.range.start()) / step_size;
-        self.with_steps(steps as u32)
+        self.steps(steps as u32)
     }
 
     /// Set the unit for the parameter.
-    pub fn with_unit(mut self, unit: Unit) -> Self {
+    pub fn unit(mut self, unit: Unit) -> Self {
         self.unit = unit;
         self
     }
 
     /// Set the flags for the parameter.
-    pub fn with_flags(mut self, flags: ParamFlags) -> Self {
+    pub fn flags(mut self, flags: ParamFlags) -> Self {
         self.flags |= flags;
         self
     }
@@ -69,15 +84,15 @@ impl Float {
     /// Enable automation for the parameter.
     ///
     /// This is equivalent to calling `with_flags(ParamFlags::AUTOMATE)`.
-    pub fn with_automate(self) -> Self {
-        self.with_flags(ParamFlags::AUTOMATE)
+    pub fn automate(self) -> Self {
+        self.flags(ParamFlags::AUTOMATE)
     }
 
     /// Enable read-only mode for the parameter.
     ///
     /// This is equivalent to calling `with_flags(ParamFlags::READ_ONLY)`.
-    pub fn with_read_only(self) -> Self {
-        self.with_flags(ParamFlags::READ_ONLY)
+    pub fn read_only(self) -> Self {
+        self.flags(ParamFlags::READ_ONLY)
     }
 }
 
