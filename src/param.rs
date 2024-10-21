@@ -112,9 +112,9 @@ pub struct Bool {
 
 impl Bool {
     /// Create a new boolean parameter.
-    pub fn new(value: bool, default: bool) -> Self {
+    pub fn new(default: bool) -> Self {
         Self {
-            value,
+            value: default,
             default,
             name: None,
             short: None,
