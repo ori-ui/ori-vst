@@ -174,7 +174,7 @@ impl Param for Bool {
     }
 
     fn steps(&self) -> Option<i32> {
-        Some(2)
+        Some(1)
     }
 
     fn to_string(&self, plain: f32) -> String {
