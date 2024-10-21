@@ -94,6 +94,93 @@ impl Params for () {
     }
 }
 
+/// A boolean parameter.
+#[derive(Clone, Debug)]
+pub struct Bool {
+    value: bool,
+    default: bool,
+    name: Option<String>,
+    short: Option<String>,
+}
+
+impl Bool {
+    /// Create a new boolean parameter.
+    pub fn new(value: bool, default: bool) -> Self {
+        Self {
+            value,
+            default,
+            name: None,
+            short: None,
+        }
+    }
+
+    /// Set the name of the parameter.
+    pub fn name(mut self, name: impl Into<String>) -> Self {
+        self.name = Some(name.into());
+        self
+    }
+
+    /// Set the short name of the parameter.
+    pub fn short(mut self, short: impl Into<String>) -> Self {
+        self.short = Some(short.into());
+        self
+    }
+}
+
+impl Param for Bool {
+    fn get(&self) -> f32 {
+        self.value as i32 as f32
+    }
+
+    fn set(&mut self, plain: f32) {
+        self.value = plain > 0.5;
+    }
+
+    fn default(&self) -> f32 {
+        self.default as i32 as f32
+    }
+
+    fn plain(&self, normalized: f32) -> f32 {
+        normalized
+    }
+
+    fn normalize(&self, plain: f32) -> f32 {
+        plain
+    }
+
+    fn default_normalized(&self) -> f32 {
+        self.normalize(self.default())
+    }
+
+    fn name(&self) -> Option<&str> {
+        self.name.as_deref()
+    }
+
+    fn short(&self) -> Option<&str> {
+        self.short.as_deref()
+    }
+
+    fn unit(&self) -> Unit {
+        Unit::Binary
+    }
+
+    fn steps(&self) -> Option<i32> {
+        Some(2)
+    }
+
+    fn to_string(&self, plain: f32) -> String {
+        format!("{}", plain > 0.5)
+    }
+
+    fn from_string(&self, string: &str) -> f32 {
+        match string {
+            "true" | "1" => 1.0,
+            "false" | "0" => 0.0,
+            _ => self.get(),
+        }
+    }
+}
+
 macro_rules! impl_iterator {
     (impl[$($tt:tt)*] $ty:ty) => {
         impl<$($tt)*> Params for $ty {
@@ -265,7 +352,7 @@ impl Unit {
             Unit::Cents => "Cents",
             Unit::Phase => "Degrees",
             Unit::Sample => "Samples",
-            Unit::Binary => "On/Off",
+            Unit::Binary => "",
             Unit::Count => "Count",
             Unit::Meters => "Meters",
             Unit::Radians => "Radians",
