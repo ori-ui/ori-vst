@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 pub use ori_vst_macro::Params;
 
 /// A parameter.
@@ -185,6 +187,20 @@ impl Param for Bool {
             "false" | "0" => 0.0,
             _ => self.get(),
         }
+    }
+}
+
+impl Deref for Bool {
+    type Target = bool;
+
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl DerefMut for Bool {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
     }
 }
 
