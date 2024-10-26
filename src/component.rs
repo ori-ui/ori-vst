@@ -1,6 +1,11 @@
+use std::{collections::HashMap, ptr};
+
 use vst3_com::IID;
 use vst3_sys::{
-    base::{kInvalidArgument, kNoInterface, kResultFalse, kResultOk, tresult, IBStream, TBool},
+    base::{
+        kIBSeekEnd, kIBSeekSet, kInvalidArgument, kNoInterface, kResultFalse, kResultOk, tresult,
+        IBStream, TBool,
+    },
     utils::SharedVstPtr,
     vst::{
         BusDirection, BusDirections, BusFlags, BusInfo, BusTypes, IComponent, IoMode, MediaType,
@@ -147,11 +152,84 @@ impl<P: VstPlugin> IComponent for RawPlugin<P> {
         kResultFalse
     }
 
-    unsafe fn set_state(&self, _state: SharedVstPtr<dyn IBStream>) -> tresult {
+    unsafe fn set_state(&self, state: SharedVstPtr<dyn IBStream>) -> tresult {
+        let Some(state) = state.upgrade() else {
+            return kInvalidArgument;
+        };
+
+        let mut plugin = self.state.plugin.lock();
+        let params = plugin.params();
+
+        let mut current = 0;
+        let mut end = 0;
+
+        if state.tell(&mut current) != kResultOk {
+            return kInvalidArgument;
+        }
+
+        if state.seek(0, kIBSeekEnd, &mut end) != kResultOk {
+            return kInvalidArgument;
+        }
+
+        if state.seek(current, kIBSeekSet, ptr::null_mut()) != kResultOk {
+            return kInvalidArgument;
+        }
+
+        let len = (end - current) as usize;
+        let mut bytes = vec![0; len];
+        let mut read = 0;
+
+        state.read(bytes.as_mut_ptr().cast(), len as i32, &mut read);
+
+        if read != len as i32 {
+            return kInvalidArgument;
+        }
+
+        let Ok(values) = serde_bencode::from_bytes::<HashMap<String, f32>>(&bytes) else {
+            return kInvalidArgument;
+        };
+
+        for i in 0..params.count() {
+            let id = params.identifier(i).unwrap();
+            let param = params.param(i).unwrap();
+
+            if let Some(value) = values.get(&id) {
+                param.set(*value);
+            }
+        }
+
         kResultOk
     }
 
-    unsafe fn get_state(&self, _state: SharedVstPtr<dyn IBStream>) -> tresult {
+    unsafe fn get_state(&self, state: SharedVstPtr<dyn IBStream>) -> tresult {
+        let Some(state) = state.upgrade() else {
+            return kInvalidArgument;
+        };
+
+        let mut plugin = self.state.plugin.lock();
+        let params = plugin.params();
+
+        let mut values: HashMap<String, f32> = HashMap::new();
+
+        for i in 0..params.count() {
+            let id = params.identifier(i).unwrap();
+            let param = params.param(i).unwrap();
+
+            values.insert(id, param.get());
+        }
+
+        if let Ok(bytes) = serde_bencode::to_bytes(&values) {
+            let mut bytes_written = 0;
+
+            state.write(
+                bytes.as_ptr().cast(),
+                bytes.len() as i32,
+                &mut bytes_written,
+            );
+
+            println!("bytes_written: {}", bytes_written);
+        }
+
         kResultOk
     }
 }

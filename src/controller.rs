@@ -1,5 +1,6 @@
-use std::{ffi::c_void, slice};
+use std::{ffi::c_void, ops::Deref, slice};
 
+use vst3_com::VstPtr;
 use vst3_sys::{
     base::{kResultOk, tresult, FIDString, IBStream},
     utils::SharedVstPtr,
@@ -7,6 +8,20 @@ use vst3_sys::{
 };
 
 use crate::{util, RawPlugin, RawView, VstPlugin};
+
+pub struct ComponentHandler {
+    vst: VstPtr<dyn IComponentHandler>,
+}
+
+unsafe impl Send for ComponentHandler {}
+
+impl Deref for ComponentHandler {
+    type Target = VstPtr<dyn IComponentHandler>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.vst
+    }
+}
 
 impl<P: VstPlugin> IEditController for RawPlugin<P> {
     unsafe fn set_component_state(&self, _state: SharedVstPtr<dyn IBStream>) -> tresult {
@@ -120,7 +135,12 @@ impl<P: VstPlugin> IEditController for RawPlugin<P> {
         &self,
         handler: SharedVstPtr<dyn IComponentHandler>,
     ) -> tresult {
-        self.control.lock().replace(handler);
+        if let Some(handler) = handler.upgrade() {
+            let component = ComponentHandler { vst: handler };
+            self.state.component.lock().replace(component);
+        } else {
+            self.state.component.lock().take();
+        }
 
         kResultOk
     }

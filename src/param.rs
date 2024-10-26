@@ -250,7 +250,9 @@ macro_rules! impl_iterator {
                     let params_count = params.count();
 
                     if index < count + params_count {
-                        return params.identifier(index - count);
+                        if let Some(id) = params.identifier(index - count) {
+                            return Some(format!("{}_{}", index, id));
+                        }
                     }
 
                     count += params_count;
@@ -260,6 +262,18 @@ macro_rules! impl_iterator {
             }
         }
     };
+}
+
+pub(crate) fn param_values(params: &mut dyn Params) -> Vec<f32> {
+    let mut values = Vec::with_capacity(params.count());
+
+    for i in 0..params.count() {
+        if let Some(param) = params.param(i) {
+            values.push(param.get());
+        }
+    }
+
+    values
 }
 
 impl_iterator!(impl[P: Params] Vec<P>);

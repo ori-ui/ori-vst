@@ -16,6 +16,7 @@ serde = ["ori/serde"]
 ori-vst-macro = { path = "macro", version = "0.1.0" }
 
 bitflags = "2.0"
+serde_bencode = "0.2"
 parking_lot = "0.12"
 uuid = "1"
 vst3-com = { git = "https://github.com/RustAudio/vst3-sys.git", rev = "f3e8f01" }

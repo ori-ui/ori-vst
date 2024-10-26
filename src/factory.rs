@@ -37,7 +37,7 @@ impl<P: VstPlugin> IPluginFactory for Factory<P> {
         util::strcpy(&plugin_info.vendor, &mut info.vendor);
         util::strcpy(&plugin_info.url, &mut info.url);
         util::strcpy(&plugin_info.email, &mut info.email);
-        info.flags = FactoryFlags::kUnicode as i32;
+        info.flags = FactoryFlags::kUnicode as i32 | FactoryFlags::kComponentNonDiscardable as i32;
 
         kResultOk
     }

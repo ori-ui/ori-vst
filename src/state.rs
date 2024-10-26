@@ -5,7 +5,10 @@ use std::sync::{
 
 use parking_lot::Mutex;
 
-use crate::{editor::EditorHandle, AudioLayout, BufferLayout, Buffers, Process, VstPlugin};
+use crate::{
+    controller::ComponentHandler, editor::EditorHandle, param_values, AudioLayout, BufferLayout,
+    Buffers, Process, VstPlugin,
+};
 
 pub(crate) struct PluginState<P: VstPlugin> {
     pub plugin: Mutex<P>,
@@ -14,6 +17,7 @@ pub(crate) struct PluginState<P: VstPlugin> {
     pub buffers: Mutex<Buffers>,
     pub status: Mutex<Process>,
     pub editor: Mutex<Option<Arc<dyn EditorHandle>>>,
+    pub component: Mutex<Option<ComponentHandler>>,
     pub latency: AtomicU32,
     pub processing: AtomicBool,
 }
@@ -35,6 +39,7 @@ impl<P: VstPlugin> PluginState<P> {
             buffers: Mutex::new(Buffers::new()),
             status: Mutex::new(Process::Done),
             editor: Mutex::new(None),
+            component: Mutex::new(None),
             latency: AtomicU32::new(0),
             processing: AtomicBool::new(false),
         }
@@ -84,5 +89,10 @@ impl<P: VstPlugin> PluginState<P> {
     pub fn allocate_buffers(&self, layout: &AudioLayout) {
         let mut buffers = self.buffers.lock();
         buffers.allocate(layout);
+    }
+
+    pub fn param_values(&self) -> Vec<f32> {
+        let mut plugin = self.plugin.lock();
+        param_values(plugin.params())
     }
 }

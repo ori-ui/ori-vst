@@ -17,6 +17,7 @@ use ori::{
     prelude::*,
 };
 use ori_skia::SkiaRenderer;
+use vst3_sys::vst::{IComponentHandler, RestartFlags};
 use x11_dl::{
     glx::{
         self, Glx, GLX_ALPHA_SIZE, GLX_BLUE_SIZE, GLX_DOUBLEBUFFER, GLX_GREEN_SIZE, GLX_RED_SIZE,
@@ -96,6 +97,8 @@ struct X11Editor<P: VstPlugin> {
     event_thread: JoinHandle<()>,
     handle: Arc<X11EditorHandle>,
     state: Arc<PluginState<P>>,
+
+    params: Vec<f32>,
 
     app: App<P>,
     window: Option<X11Window>,
@@ -319,12 +322,16 @@ unsafe fn spawn_editor_thread<P: VstPlugin>(
 
         let app = app.build(waker);
 
+        let params = state.param_values();
+
         let mut editor = X11Editor {
             parent,
             display,
             event_thread,
             handle,
             state,
+
+            params,
 
             app,
             window: None,
@@ -346,13 +353,27 @@ unsafe fn spawn_editor_thread<P: VstPlugin>(
 
             while let Ok(event) = event_rx.try_recv() {
                 handle_event(&mut editor, event);
-
-                if !editor.running.load(Ordering::Relaxed) {
-                    return;
-                }
-
                 handle_app_requests(&mut editor);
             }
+
+            let params = editor.state.param_values();
+
+            for (i, (old, new)) in editor.params.iter().zip(params.iter()).enumerate() {
+                if old != new {
+                    let component = editor.state.component.lock();
+                    if let Some(component) = component.as_ref() {
+                        let _ = component.begin_edit(i as u32);
+
+                        component.perform_edit(i as u32, *new as f64);
+
+                        let _ = component.end_edit(i as u32);
+
+                        component.restart_component(RestartFlags::kParamValuesChanged as i32);
+                    }
+                }
+            }
+
+            editor.params = params;
 
             if editor.render {
                 continue;
@@ -360,11 +381,6 @@ unsafe fn spawn_editor_thread<P: VstPlugin>(
 
             if let Ok(event) = event_rx.recv() {
                 handle_event(&mut editor, event);
-
-                if !editor.running.load(Ordering::Relaxed) {
-                    return;
-                }
-
                 handle_app_requests(&mut editor);
             }
         }

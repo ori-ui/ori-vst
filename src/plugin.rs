@@ -3,12 +3,10 @@
 use std::{ffi::c_void, ptr::NonNull, sync::Arc};
 
 use ori::core::{view::View, window::Window};
-use parking_lot::Mutex;
 use uuid::Uuid;
 use vst3_sys::{
     base::{kResultOk, tresult, IPluginBase},
-    utils::SharedVstPtr,
-    vst::{IAudioProcessor, IComponent, IComponentHandler, IEditController},
+    vst::{IAudioProcessor, IComponent, IEditController},
     VST3,
 };
 
@@ -140,15 +138,12 @@ pub enum Process {
 pub struct RawPlugin<P: VstPlugin> {
     /// The state of the plugin.
     pub(crate) state: Arc<PluginState<P>>,
-
-    /// The component handler.
-    pub(crate) control: Mutex<Option<SharedVstPtr<dyn IComponentHandler>>>,
 }
 
 impl<P: VstPlugin> RawPlugin<P> {
     /// Create a new raw plugin.
     pub fn new() -> Box<Self> {
-        Self::allocate(Arc::new(PluginState::new()), Mutex::new(None))
+        Self::allocate(Arc::new(PluginState::new()))
     }
 }
 
