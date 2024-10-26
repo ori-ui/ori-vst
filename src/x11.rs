@@ -25,7 +25,7 @@ use x11_dl::{
     xcursor::Xcursor,
     xlib::{
         self, AllocNone, ButtonPressMask, ButtonReleaseMask, CWColormap, CWEventMask, Display,
-        ExposureMask, InputOutput, KeyPressMask, KeyReleaseMask, LeaveWindowMask,
+        EnterWindowMask, ExposureMask, InputOutput, KeyPressMask, KeyReleaseMask, LeaveWindowMask,
         PointerMotionMask, StructureNotifyMask, XEvent, XKeyEvent, XSetWindowAttributes, Xlib,
     },
 };
@@ -108,6 +108,7 @@ struct X11Window {
     id: WindowId,
     glx: glx::GLXContext,
     window: xlib::Window,
+    cursor: Cursor,
     cursors: HashMap<Cursor, xlib::Cursor>,
     renderer: ManuallyDrop<SkiaRenderer>,
 }
@@ -121,28 +122,23 @@ unsafe fn handle_app_requests<P: VstPlugin>(editor: &mut X11Editor<P>) {
 unsafe fn handle_app_request<P: VstPlugin>(editor: &mut X11Editor<P>, request: AppRequest<P>) {
     match request {
         AppRequest::OpenWindow(window, ui) => open_window(editor, window, ui),
-        AppRequest::CloseWindow(_) => {}
-        AppRequest::DragWindow(_) => {}
+        AppRequest::CloseWindow(_) => editor.running.store(false, Ordering::Relaxed),
+        AppRequest::DragWindow(_) => {
+            warn!("DragWindow is not supported on X11");
+        }
         AppRequest::RequestRedraw(_) => editor.render = true,
         AppRequest::UpdateWindow(_, update) => match update {
-            WindowUpdate::Title(_) => {}
-            WindowUpdate::Icon(_) => {}
-            WindowUpdate::Size(_) => {}
-            WindowUpdate::Scale(_) => {}
-            WindowUpdate::Resizable(_) => {}
-            WindowUpdate::Decorated(_) => {}
-            WindowUpdate::Maximized(_) => {}
-            WindowUpdate::Visible(_) => {}
-            WindowUpdate::Color(_) => {}
+            WindowUpdate::Title(_) => warn!("Title is not supported in VSTs"),
+            WindowUpdate::Icon(_) => warn!("Icon is not supported in VSTs"),
+            WindowUpdate::Size(_) => warn!("Size is not supported in VSTs"),
+            WindowUpdate::Scale(_) => warn!("Scale is not supported in VSTs"),
+            WindowUpdate::Resizable(_) => warn!("Resizable is not supported in VSTs"),
+            WindowUpdate::Decorated(_) => warn!("Decorated is not supported in VSTs"),
+            WindowUpdate::Maximized(_) => warn!("Maximized is not supported in VSTs"),
+            WindowUpdate::Visible(_) => warn!("Visible is not supported in VSTs"),
+            WindowUpdate::Color(_) => editor.render = true,
             WindowUpdate::Cursor(cursor) => {
-                if let Some(ref mut window) = editor.window {
-                    let cursor = window.cursors.entry(cursor).or_insert_with(|| {
-                        let cstring = ffi::CString::new(cursor.name()).unwrap();
-                        (XCURSOR.XcursorLibraryLoadCursor)(editor.display, cstring.as_ptr())
-                    });
-
-                    (XLIB.XDefineCursor)(editor.display, window.window, *cursor);
-                }
+                set_window_cursor(editor, cursor);
             }
             WindowUpdate::Ime(_) => {}
         },
@@ -192,6 +188,7 @@ unsafe fn open_window<P: VstPlugin>(editor: &mut X11Editor<P>, window: Window, u
     (*attrs.as_mut_ptr()).event_mask = ExposureMask
         | StructureNotifyMask
         | PointerMotionMask
+        | EnterWindowMask
         | LeaveWindowMask
         | ButtonPressMask
         | ButtonReleaseMask
@@ -239,6 +236,7 @@ unsafe fn open_window<P: VstPlugin>(editor: &mut X11Editor<P>, window: Window, u
         id: window.id(),
         glx,
         window: x11_window,
+        cursor: Cursor::default(),
         cursors: HashMap::new(),
         renderer: ManuallyDrop::new(renderer),
     };
@@ -277,6 +275,17 @@ unsafe fn render_window<P: VstPlugin>(editor: &mut X11Editor<P>) {
 
     (GLX.glXSwapBuffers)(editor.display, window.window);
     (GLX.glXMakeCurrent)(editor.display, 0, ptr::null_mut());
+}
+
+unsafe fn set_window_cursor<P: VstPlugin>(editor: &mut X11Editor<P>, cursor: Cursor) {
+    if let Some(ref mut window) = editor.window {
+        let cursor = window.cursors.entry(cursor).or_insert_with(|| {
+            let cstring = ffi::CString::new(cursor.name()).unwrap();
+            (XCURSOR.XcursorLibraryLoadCursor)(editor.display, cstring.as_ptr())
+        });
+
+        (XLIB.XDefineCursor)(editor.display, window.window, *cursor);
+    }
 }
 
 unsafe fn spawn_editor_thread<P: VstPlugin>(
@@ -415,6 +424,14 @@ unsafe fn handle_xevent<P: VstPlugin>(editor: &mut X11Editor<P>, mut event: XEve
                     position,
                 );
             }
+        }
+        xlib::EnterNotify => {
+            let cursor = editor
+                .window
+                .as_ref()
+                .map_or(Cursor::default(), |w| w.cursor);
+
+            set_window_cursor(editor, cursor);
         }
         xlib::LeaveNotify => {
             if let Some(ref window) = editor.window {
