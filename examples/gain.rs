@@ -65,4 +65,4 @@ impl VstPlugin for GainPlugin {
     }
 }
 
-vst3!(GainPlugin);
+ori_vst::export!(GainPlugin);
