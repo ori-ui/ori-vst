@@ -71,6 +71,9 @@ pub struct Info {
     /// This must be not be longer than 128 characters.
     pub name: String,
 
+    /// The subcategories of the plugin.
+    pub subcategories: Vec<Subcategory>,
+
     /// The vendor of the plugin.
     ///
     /// This must be not be longer than 128 characters.
@@ -129,6 +132,74 @@ pub enum Process {
 
     /// Keep the processing state running.
     KeepAlive,
+}
+
+/// The category of the plugin.
+#[derive(Clone, Copy, Debug)]
+pub enum Subcategory {
+    Fx,
+    Instrument,
+    Spatial,
+    Analyzer,
+    Delay,
+    Distortion,
+    Drum,
+    Dynamics,
+    Eq,
+    External,
+    Filter,
+    Generator,
+    Mastering,
+    Modulation,
+    Network,
+    Piano,
+    PitchShift,
+    Restoration,
+    Reverb,
+    Sampler,
+    Synth,
+    Tools,
+    UpDownMix,
+    Mono,
+    Stereo,
+    Surround,
+    Ambisonic,
+    Custom(&'static str),
+}
+
+impl Subcategory {
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::Fx => "Fx",
+            Self::Instrument => "Instrument",
+            Self::Spatial => "Spatial",
+            Self::Analyzer => "Analyzer",
+            Self::Delay => "Delay",
+            Self::Distortion => "Distortion",
+            Self::Drum => "Drum",
+            Self::Dynamics => "Dynamics",
+            Self::Eq => "EQ",
+            Self::External => "External",
+            Self::Filter => "Filter",
+            Self::Generator => "Generator",
+            Self::Mastering => "Mastering",
+            Self::Modulation => "Modulation",
+            Self::Network => "Network",
+            Self::Piano => "Piano",
+            Self::PitchShift => "Pitch Shift",
+            Self::Restoration => "Restoration",
+            Self::Reverb => "Reverb",
+            Self::Sampler => "Sampler",
+            Self::Synth => "Synth",
+            Self::Tools => "Tools",
+            Self::UpDownMix => "Up-Downmix",
+            Self::Mono => "Mono",
+            Self::Stereo => "Stereo",
+            Self::Surround => "Surround",
+            Self::Ambisonic => "Ambisonics",
+            Self::Custom(category) => category,
+        }
+    }
 }
 
 /// A raw wrapper around a VST3 plugin.

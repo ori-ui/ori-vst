@@ -11,7 +11,7 @@ use vst3_sys::{
     VST3,
 };
 
-use crate::{util, RawPlugin, VstPlugin};
+use crate::{util, RawPlugin, Subcategory, VstPlugin};
 
 /// A VST3 plugin factory.
 #[VST3(implements(IPluginFactory, IPluginFactory2))]
@@ -92,12 +92,20 @@ impl<P: VstPlugin> IPluginFactory2 for Factory<P> {
 
         let info = &mut *info;
         let plugin_info = P::info();
+
+        let subcategories = plugin_info
+            .subcategories
+            .iter()
+            .map(Subcategory::as_str)
+            .collect::<Vec<_>>()
+            .join("|");
+
         util::strcpy(&plugin_info.name, &mut info.name);
         util::strcpy("Audio Module Class", &mut info.category);
         util::strcpy(&plugin_info.vendor, &mut info.vendor);
         util::strcpy(&plugin_info.version, &mut info.version);
         util::strcpy("VST3 3.6.14", &mut info.sdk_version);
-        util::strcpy("", &mut info.subcategories);
+        util::strcpy(&subcategories, &mut info.subcategories);
         info.cid.data = plugin_info.uuid.to_bytes_le();
         info.cardinality = ClassCardinality::kManyInstances as i32;
         info.class_flags = 1 << 1; // kSimpleModeSupported
