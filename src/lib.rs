@@ -106,7 +106,7 @@ pub mod prelude {
 
     pub use crate::{
         Activate, AudioLayout, AudioPort, Bool, Buffer, BufferLayout, Float, Info, Param,
-        ParamFlags, Params, Process, Unit, VstPlugin,
+        ParamFlags, Params, Process, Subcategory, Unit, VstPlugin,
     };
 
     pub use ori_vst_macro::uuid;
