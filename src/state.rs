@@ -31,10 +31,11 @@ impl<P: VstPlugin> Default for PluginState<P> {
 impl<P: VstPlugin> PluginState<P> {
     pub fn new() -> Self {
         let plugin = P::new();
+        let layout = P::default_layout();
 
         Self {
             plugin: Mutex::new(plugin),
-            audio_layout: Mutex::new(Arc::new(AudioLayout::default())),
+            audio_layout: Mutex::new(Arc::new(layout)),
             buffer_layout: Mutex::new(None),
             buffers: Mutex::new(Buffers::new()),
             status: Mutex::new(Process::Done),

@@ -20,6 +20,11 @@ pub trait VstPlugin: Sized + Send + 'static {
     /// Get the audio layout of the plugin, given a set of input and output channel counts.
     fn layout(inputs: &[u32], outputs: &[u32]) -> Option<AudioLayout>;
 
+    /// Get the default audio layout of the plugin.
+    fn default_layout() -> AudioLayout {
+        Self::layout(&[], &[]).unwrap_or_default()
+    }
+
     /// Create a new instance of the plugin.
     fn new() -> Self;
 
