@@ -16,7 +16,7 @@ use ori::{
     core::{command::CommandWaker, window::WindowUpdate},
     prelude::*,
 };
-use ori_skia::SkiaRenderer;
+use ori_skia::{SkiaFonts, SkiaRenderer};
 use vst3_sys::vst::{IComponentHandler, RestartFlags};
 use x11_dl::{
     glx::{
@@ -273,7 +273,16 @@ unsafe fn render_window<P: VstPlugin>(editor: &mut X11Editor<P>) {
         let width = editor.handle.width.load(Ordering::Relaxed);
         let height = editor.handle.height.load(Ordering::Relaxed);
 
-        (window.renderer).render(draw.canvas, draw.clear_color, width, height, 1.0);
+        let fonts = editor.app.contexts.get_mut::<Box<dyn Fonts>>().unwrap();
+
+        (window.renderer).render(
+            fonts.downcast_mut().unwrap(),
+            &draw.canvas,
+            draw.clear_color,
+            width,
+            height,
+            1.0,
+        );
     }
 
     (GLX.glXSwapBuffers)(editor.display, window.window);
@@ -320,7 +329,9 @@ unsafe fn spawn_editor_thread<P: VstPlugin>(
             }
         });
 
-        let app = app.build(waker);
+        let fonts = Box::new(SkiaFonts::new(Some("Roboto")));
+
+        let app = app.build(waker, fonts);
 
         let params = state.param_values();
 

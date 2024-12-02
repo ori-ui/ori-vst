@@ -11,6 +11,7 @@ impl VstPlugin for GainPlugin {
         Info {
             uuid: uuid!("4c38d5eb-aa45-4ce4-95ed-af8993b2557d"),
             name: String::from("Gain (Ori vst3)"),
+            subcategories: vec![Subcategory::Fx],
             vendor: String::from("ChangeCaps Inc."),
             version: String::from("0.1.0"),
             url: String::from("https://example.com"),
